@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://postpilot-4tud.onrender.com/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
