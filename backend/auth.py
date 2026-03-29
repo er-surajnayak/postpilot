@@ -24,8 +24,8 @@ TOKENS_DIR.mkdir(exist_ok=True)
 # In-memory store for PKCE code_verifiers, keyed by OAuth state
 _verifiers: dict[str, str] = {}
 
-BACKEND_URL  = os.getenv("BACKEND_URL",  "http://localhost:8000")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+BACKEND_URL  = os.getenv("BACKEND_URL",  "https://postpilot-4tud.onrender.com")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://postpilot-red-tau.vercel.app")
 REDIRECT_URI = f"{BACKEND_URL}/auth/callback"
 
 

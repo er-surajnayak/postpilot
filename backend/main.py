@@ -18,7 +18,7 @@ load_dotenv()
 UPLOADS_DIR = Path("uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://postpilot-red-tau.vercel.app/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://postpilot-red-tau.vercel.app")
 
 
 @asynccontextmanager
@@ -32,7 +32,7 @@ app = FastAPI(title="Social Scheduler API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "https://postpilot-red-tau.vercel.app/", "https://postpilot-red-tau.vercel.app/"],
+    allow_origins=[FRONTEND_URL, "https://postpilot-red-tau.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
