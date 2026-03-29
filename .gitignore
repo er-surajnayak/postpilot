@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+venv/
+.venv/
+dist/
+build/
+
+# Env & secrets
+.env
+*.env
+backend/tokens/
+backend/uploads/
+backend/jobs.json
+
+# Node
+node_modules/
+frontend/dist/
+
+# Data directory (Docker bind mounts)
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,96 @@
+/* IBM Carbon Design System — full stylesheet */
+@use '@carbon/react';
+
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans/700.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--cds-background);
+  color: var(--cds-text-primary);
+}
+
+.cds--content {
+  margin-top: 3rem;
+  padding: 2rem 2rem 2rem 16rem;
+  min-height: calc(100vh - 3rem);
+  background: var(--cds-background);
+  transition: padding-left 0.11s cubic-bezier(0.2, 0, 1, 0.9);
+}
+
+@media (max-width: 66rem) {
+  .cds--content {
+    padding-left: 2rem;
+  }
+}
+
+@media (max-width: 42rem) {
+  .cds--content {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* DatePicker integration */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-bottom: 1px solid var(--cds-border-strong);
+  background: var(--cds-field);
+  color: var(--cds-text-primary);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.react-datepicker__input-container input:focus {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: -2px;
+}
+
+.react-datepicker {
+  font-family: 'IBM Plex Sans', sans-serif !important;
+  background: var(--cds-layer) !important;
+  border: 1px solid var(--cds-border-subtle) !important;
+  color: var(--cds-text-primary) !important;
+}
+
+.react-datepicker__header {
+  background: var(--cds-layer-accent) !important;
+  border-bottom: 1px solid var(--cds-border-subtle) !important;
+  color: var(--cds-text-primary) !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker__day,
+.react-datepicker-time__header {
+  color: var(--cds-text-primary) !important;
+}
+
+.react-datepicker__day:hover {
+  background: var(--cds-layer-hover) !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background: var(--cds-interactive) !important;
+  color: #fff !important;
+}
+
+h1 {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-weight: 600;
+  margin-top: 0;
+}

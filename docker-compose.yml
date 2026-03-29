@@ -1,0 +1,37 @@
+services:
+
+  # ── Backend: FastAPI + APScheduler ────────────────────────────
+  backend:
+    build: ./backend
+    container_name: postpilot_backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      # Override FRONTEND_URL so OAuth callbacks point to the right place.
+      # Change this to your actual domain when deploying to a server.
+      FRONTEND_URL: http://localhost
+      BACKEND_URL:  http://localhost/api
+    volumes:
+      # Persistent data — survives container rebuilds
+      - ./data/uploads:/app/uploads   # video & thumbnail files
+      - ./data/tokens:/app/tokens     # YouTube OAuth tokens
+      - ./data/jobs.json:/app/jobs.json  # job queue state
+    healthcheck:
+      test:     ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+    # Only expose backend port when debugging; in normal use Nginx is the entry point
+    # ports:
+    #   - "8000:8000"
+
+  # ── Frontend: Vite build served by Nginx ──────────────────────
+  frontend:
+    build: ./frontend
+    container_name: postpilot_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy

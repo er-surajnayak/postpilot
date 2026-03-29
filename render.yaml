@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: postpilot-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_CLIENT_ID
+        sync: false          # fill in on Render dashboard
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true  # Render auto-generates a random value
+      - key: FRONTEND_URL
+        sync: false          # set to your Vercel URL, e.g. https://postpilot.vercel.app
+      - key: BACKEND_URL
+        sync: false          # set to https://postpilot-backend.onrender.com

@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.env
+uploads/
+tokens/
+jobs.json
+*.pickle
