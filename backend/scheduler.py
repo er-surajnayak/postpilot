@@ -24,21 +24,22 @@ def save_jobs(jobs: dict):
     JOBS_FILE.write_text(json.dumps(jobs, indent=2, default=str))
 
 
-def add_job(post_data: dict, video_path: str, thumbnail_path: str = None) -> str:
+def add_job(post_data: dict, media_path: str = None, thumbnail_path: str = None) -> str:
     """Queue an upload job. Returns job_id."""
     job_id = str(uuid.uuid4())[:8]
     jobs   = load_jobs()
 
     jobs[job_id] = {
         "job_id":         job_id,
-        "channel_id":     post_data["channel_id"],
-        "title":          post_data["title"],
+        "platform":       post_data["platform"],
+        "account_id":     post_data["account_id"],
+        "title":          post_data.get("title") or post_data.get("message")[:100],
         "status":         "queued",
-        "video_path":     video_path,
+        "media_path":     media_path,
         "thumbnail_path": thumbnail_path,
         "post_data":      post_data,
-        "video_id":       None,
-        "video_url":      None,
+        "media_id":       None,
+        "media_url":      None,
         "error":          None,
         "created_at":     datetime.now(timezone.utc).isoformat(),
     }
@@ -48,7 +49,13 @@ def add_job(post_data: dict, video_path: str, thumbnail_path: str = None) -> str
     scheduled_at = post_data.get("scheduled_at")
     if scheduled_at:
         tz      = pytz.timezone(post_data.get("timezone", "Asia/Kolkata"))
-        run_dt  = datetime.fromisoformat(scheduled_at.replace("Z", ""))
+        # Parse ISO format string
+        try:
+            run_dt  = datetime.fromisoformat(scheduled_at.replace("Z", ""))
+        except:
+             # fallback for older formats
+             run_dt = datetime.strptime(scheduled_at, "%Y-%m-%dT%H:%M")
+             
         if run_dt.tzinfo is None:
             run_dt = tz.localize(run_dt)
 
@@ -69,6 +76,8 @@ def add_job(post_data: dict, video_path: str, thumbnail_path: str = None) -> str
 def run_upload_job(job_id: str):
     """Called by scheduler — does the actual upload."""
     from youtube import upload_video, upload_thumbnail
+    from linkedin import publish_linkedin_post
+    from auth import get_linkedin_token
 
     jobs = load_jobs()
     if job_id not in jobs:
@@ -80,29 +89,55 @@ def run_upload_job(job_id: str):
 
     try:
         pd = job["post_data"]
-        result = upload_video(
-            channel_id   = pd["channel_id"],
-            file_path    = job["video_path"],
-            title        = pd["title"],
-            description  = pd.get("description", ""),
-            tags         = pd.get("tags", []),
-            privacy      = pd.get("privacy", "private"),
-            scheduled_at = pd.get("scheduled_at"),
-            tz_name      = pd.get("timezone", "Asia/Kolkata"),
-            is_short     = pd.get("is_short", False),
-            notify       = pd.get("notify", False),
-        )
+        platform = pd.get("platform", "youtube")
+        
+        if platform == "youtube":
+            result = upload_video(
+                channel_id   = pd["account_id"],
+                file_path    = job["media_path"],
+                title        = pd["title"],
+                description  = pd.get("description", ""),
+                tags         = pd.get("tags", []),
+                privacy      = pd.get("privacy", "private"),
+                scheduled_at = pd.get("scheduled_at"),
+                tz_name      = pd.get("timezone", "Asia/Kolkata"),
+                is_short     = pd.get("is_short", False),
+                notify       = pd.get("notify", False),
+            )
+            job["media_id"]  = result["video_id"]
+            job["media_url"] = result["video_url"]
+            
+            # Upload thumbnail if provided
+            if job.get("thumbnail_path"):
+                try:
+                    upload_thumbnail(pd["account_id"], result["video_id"], job["thumbnail_path"])
+                except Exception as e:
+                    job["error"] = f"Video uploaded but thumbnail failed: {e}"
+                    
+        elif platform == "linkedin":
+            token = get_linkedin_token(pd["account_id"])
+            
+            # Determine if media is video or image
+            img_path = None
+            vid_path = None
+            if job["media_path"]:
+                ext = job["media_path"].split(".")[-1].lower()
+                if ext in ["mp4", "mov", "avi"]:
+                    vid_path = job["media_path"]
+                else:
+                    img_path = job["media_path"]
+            
+            post_id, post_url = publish_linkedin_post(
+                token      = token,
+                person_urn = pd["account_id"],
+                message    = pd.get("message") or pd.get("title"),
+                image_path = img_path,
+                video_path = vid_path
+            )
+            job["media_id"]  = post_id
+            job["media_url"] = post_url
 
-        job["video_id"]  = result["video_id"]
-        job["video_url"] = result["video_url"]
         job["status"]    = "scheduled" if pd.get("scheduled_at") else "published"
-
-        # Upload thumbnail if provided
-        if job.get("thumbnail_path"):
-            try:
-                upload_thumbnail(pd["channel_id"], result["video_id"], job["thumbnail_path"])
-            except Exception as e:
-                job["error"] = f"Video uploaded but thumbnail failed: {e}"
 
     except Exception as e:
         job["status"] = "failed"
@@ -110,6 +145,7 @@ def run_upload_job(job_id: str):
 
     jobs[job_id] = job
     save_jobs(jobs)
+
 
 
 def get_all_jobs() -> list:

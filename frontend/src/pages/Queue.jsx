@@ -21,13 +21,14 @@ import {
   Launch,
   Close,
   LogoYoutube,
+  LogoLinkedin,
   Add,
 } from '@carbon/icons-react'
 import { getPosts, cancelPost } from '../api'
 
 const STATUS_CONFIG = {
   queued:    { type: 'warm-gray', label: 'Queued'    },
-  uploading: { type: 'blue',      label: 'Uploading' },
+  uploading: { type: 'blue',      label: 'Processing' },
   scheduled: { type: 'purple',    label: 'Scheduled' },
   published: { type: 'green',     label: 'Published' },
   failed:    { type: 'red',       label: 'Failed'    },
@@ -41,8 +42,10 @@ function PostCard({ post, onCancel }) {
 
   const canCancel = ['queued', 'scheduled'].includes(post.status)
   const cfg = STATUS_CONFIG[post.status] || STATUS_CONFIG.queued
+  const isYT = post.platform === 'youtube'
 
   const handleCancel = async () => {
+    if (!window.confirm('Cancel this post?')) return
     setCancelling(true)
     await cancelPost(post.job_id)
     onCancel(post.job_id)
@@ -55,51 +58,51 @@ function PostCard({ post, onCancel }) {
   const createdDate = new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
 
   const detailRows = [
-    ['Job ID',   post.job_id],
-    ['Privacy',  post.post_data?.privacy?.toUpperCase() || '—'],
-    ['Channel',  post.channel_id],
+    ['Platform', post.platform?.toUpperCase() || 'YOUTUBE'],
+    ['Account',  post.account_id || post.channel_id],
+    ['Title/Msg', post.post_data?.title || post.post_data?.message || '—'],
     ['Timezone', post.post_data?.timezone || '—'],
-    ['Tags',     post.post_data?.tags?.join(', ') || 'None'],
-    ['Video ID', post.video_id || 'Pending…'],
+    ['Media ID', post.media_id || post.video_id || 'Pending…'],
+    ['Job ID',   post.job_id],
   ]
 
   return (
     <Layer>
       <Tile style={{ marginBottom: '1rem', padding: 0, overflow: 'hidden' }}>
-        {/* Main row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', flexWrap: 'wrap' }}>
           {/* Icon */}
           <div style={{
             width: 44, height: 44, borderRadius: 4, flexShrink: 0,
-            background: '#ff0000',
+            background: isYT ? '#ff0000' : '#0077b5',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <LogoYoutube size={20} style={{ color: '#fff' }} />
+            {isYT ? <LogoYoutube size={24} style={{ color: '#fff' }} /> : <LogoLinkedin size={24} style={{ color: '#fff' }} />}
           </div>
 
           {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ margin: 0, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {post.post_data?.title || post.title || 'Untitled'}
+              {post.post_data?.title || post.post_data?.message || post.title || 'Untitled'}
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.25rem' }}>
               <Tag type={cfg.type} size="sm">{cfg.label}</Tag>
               {scheduledDate && (
                 <span style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>📅 {scheduledDate}</span>
               )}
-              {post.post_data?.is_short && <Tag type="purple" size="sm">Short</Tag>}
-              <span style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>{createdDate}</span>
+              {post.post_data?.is_short && <Tag type="purple" size="sm">YouTube Short</Tag>}
+              {post.media_path && <Tag type="warm-gray" size="sm">File Upload</Tag>}
+              <span style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>Created: {createdDate}</span>
             </div>
           </div>
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
-            {post.video_url && (
+            {(post.media_url || post.video_url) && (
               <Button
                 size="sm" kind="ghost" hasIconOnly
                 renderIcon={Launch}
-                iconDescription="Watch on YouTube"
-                href={post.video_url}
+                iconDescription={isYT ? "Watch on YouTube" : "View on LinkedIn"}
+                href={post.media_url || post.video_url}
                 target="_blank"
                 rel="noreferrer"
               />
@@ -142,7 +145,7 @@ function PostCard({ post, onCancel }) {
                     fontSize: k === 'Job ID' ? '0.7rem' : '0.875rem',
                     fontWeight: 500,
                     wordBreak: 'break-all',
-                    fontFamily: ['Job ID', 'Video ID', 'Channel'].includes(k) ? 'monospace' : 'inherit',
+                    fontFamily: ['Job ID', 'Media ID', 'Account'].includes(k) ? 'monospace' : 'inherit',
                   }}>
                     {v}
                   </p>
@@ -153,22 +156,22 @@ function PostCard({ post, onCancel }) {
             {post.error && (
               <InlineNotification
                 kind="error"
-                title="Error:"
+                title="Error Details:"
                 subtitle={post.error}
                 hideCloseButton
                 style={{ marginTop: '1rem', maxWidth: '100%' }}
               />
             )}
-            {post.video_url && (
+            {(post.media_url || post.video_url) && (
               <div style={{ marginTop: '1rem' }}>
-                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>Video URL</p>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>External URL</p>
                 <a
-                  href={post.video_url}
+                  href={post.media_url || post.video_url}
                   target="_blank"
                   rel="noreferrer"
                   style={{ fontSize: '0.8rem', wordBreak: 'break-all', color: 'var(--cds-link-primary)' }}
                 >
-                  {post.video_url}
+                  {post.media_url || post.video_url}
                 </a>
               </div>
             )}
@@ -195,7 +198,7 @@ export default function Queue() {
 
   useEffect(() => {
     load()
-    const interval = setInterval(load, 10000)
+    const interval = setInterval(load, 15000)
     return () => clearInterval(interval)
   }, [])
 
@@ -213,7 +216,7 @@ export default function Queue() {
 
   const tabLabel = (key) => {
     const count = key === 'all' ? posts.length : posts.filter(p => p.status === key).length
-    const label = key.charAt(0).toUpperCase() + key.slice(1)
+    const label = key === 'uploading' ? 'Processing' : key.charAt(0).toUpperCase() + key.slice(1)
     return count > 0 ? `${label} (${count})` : label
   }
 
@@ -223,9 +226,9 @@ export default function Queue() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 style={{ marginBottom: '0.5rem' }}>Post Queue</h1>
+            <h1 style={{ marginBottom: '0.5rem' }}>Scheduler Queue</h1>
             <p style={{ color: 'var(--cds-text-secondary)', margin: 0 }}>
-              Track all your scheduled and published videos.
+              Monitor and manage all scheduled posts across YouTube and LinkedIn.
             </p>
           </div>
           <Button
@@ -299,3 +302,4 @@ export default function Queue() {
     </Grid>
   )
 }
+

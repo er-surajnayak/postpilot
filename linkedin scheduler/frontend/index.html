@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Publisher — IBM Carbon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Carbon Tokens ───────────────────────────────────────── */
+    :root[data-theme="dark"] {
+      --bg-primary:     #161616;
+      --bg-secondary:   #262626;
+      --bg-tertiary:    #393939;
+      --bg-hover:       #353535;
+      --layer-01:       #262626;
+      --layer-02:       #393939;
+      --layer-03:       #525252;
+      --border:         #525252;
+      --border-subtle:  #393939;
+      --text-primary:   #f4f4f4;
+      --text-secondary: #c6c6c6;
+      --text-helper:    #8d8d8d;
+      --text-disabled:  #525252;
+      --text-on-color:  #ffffff;
+      --interactive:    #0f62fe;
+      --interactive-hover: #0353e9;
+      --interactive-active: #002d9c;
+      --link:           #78a9ff;
+      --success:        #42be65;
+      --warning:        #f1c21b;
+      --error:          #fa4d56;
+      --focus:          #ffffff;
+      --skeleton:       #393939;
+    }
+    :root[data-theme="light"] {
+      --bg-primary:     #f4f4f4;
+      --bg-secondary:   #ffffff;
+      --bg-tertiary:    #e0e0e0;
+      --bg-hover:       #e8e8e8;
+      --layer-01:       #ffffff;
+      --layer-02:       #f4f4f4;
+      --layer-03:       #e0e0e0;
+      --border:         #8d8d8d;
+      --border-subtle:  #c6c6c6;
+      --text-primary:   #161616;
+      --text-secondary: #525252;
+      --text-helper:    #6f6f6f;
+      --text-disabled:  #c6c6c6;
+      --text-on-color:  #ffffff;
+      --interactive:    #0f62fe;
+      --interactive-hover: #0353e9;
+      --interactive-active: #002d9c;
+      --link:           #0043ce;
+      --success:        #198038;
+      --warning:        #f1c21b;
+      --error:          #da1e28;
+      --focus:          #0f62fe;
+      --skeleton:       #e0e0e0;
+    }
+
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.43;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    /* ── Shell ────────────────────────────────────────────────── */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      height: 48px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .header-logo svg { fill: var(--interactive); }
+    .header-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-subtle);
+    }
+    .header-product {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+    .header-right { display: flex; align-items: center; gap: 0.5rem; }
+
+    /* ── Theme Toggle ─────────────────────────────────────────── */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      background: var(--layer-01);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0;
+      padding: 0 12px;
+      height: 32px;
+      cursor: pointer;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px;
+      color: var(--text-secondary);
+      gap: 8px;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .theme-toggle:hover {
+      background: var(--bg-hover);
+      border-color: var(--border);
+      color: var(--text-primary);
+    }
+    .theme-toggle svg { flex-shrink: 0; }
+
+    /* ── Main ─────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 768px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Page Title ───────────────────────────────────────────── */
+    .page-heading {
+      margin-bottom: 2rem;
+    }
+    .page-heading h1 {
+      font-size: 28px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .page-heading p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+
+    /* ── Tiles / Cards ────────────────────────────────────────── */
+    .tile {
+      background: var(--layer-01);
+      border: 1px solid var(--border-subtle);
+      padding: 1.5rem;
+      margin-bottom: 1px;
+      position: relative;
+    }
+    .tile:first-of-type { border-top-left-radius: 0; border-top-right-radius: 0; }
+    .tile-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .tile-step {
+      width: 24px;
+      height: 24px;
+      background: var(--interactive);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .tile-step.done { background: var(--success); }
+    .tile-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .tile-subtitle {
+      font-size: 12px;
+      color: var(--text-helper);
+      margin-top: 2px;
+    }
+
+    /* ── Form Controls ────────────────────────────────────────── */
+    .field-group { margin-bottom: 1rem; }
+    .field-group:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    label .helper-text {
+      font-weight: 400;
+      color: var(--text-helper);
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 11px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--layer-02);
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      padding: 11px 16px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-appearance: none;
+      border-radius: 0;
+    }
+    input[type="password"] { font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.1em; }
+
+    input:focus, textarea:focus, select:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: -2px;
+      border-color: var(--interactive);
+    }
+    input::placeholder, textarea::placeholder { color: var(--text-helper); }
+
+    textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%238d8d8d' d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 40px;
+    }
+    select option { background: var(--bg-secondary); }
+
+    /* ── Character Counter ────────────────────────────────────── */
+    .char-counter {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--text-helper);
+      text-align: right;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .char-counter.warn { color: var(--warning); }
+    .char-counter.error-count { color: var(--error); }
+
+    /* ── Radio Group ──────────────────────────────────────────── */
+    .radio-group { display: flex; gap: 1px; flex-wrap: wrap; }
+    .radio-tile {
+      flex: 1;
+      min-width: 100px;
+      background: var(--layer-02);
+      border: 1px solid var(--border-subtle);
+      padding: 1rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      position: relative;
+    }
+    .radio-tile:hover { background: var(--bg-hover); }
+    .radio-tile input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+    .radio-tile.active {
+      background: var(--interactive);
+      border-color: var(--interactive);
+    }
+    .radio-tile.active .radio-icon,
+    .radio-tile.active .radio-label { color: #fff; }
+    .radio-icon { font-size: 20px; line-height: 1; }
+    .radio-label { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .radio-desc { font-size: 11px; color: var(--text-helper); }
+    .radio-tile.active .radio-desc { color: rgba(255,255,255,0.7); }
+
+    /* ── File Drop Zone ───────────────────────────────────────── */
+    .dropzone {
+      border: 1px dashed var(--border);
+      background: var(--layer-02);
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      background: var(--bg-hover);
+      border-color: var(--interactive);
+    }
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+    .dropzone-icon { font-size: 32px; margin-bottom: 0.5rem; }
+    .dropzone-text { font-size: 13px; color: var(--text-secondary); }
+    .dropzone-hint { font-size: 11px; color: var(--text-helper); margin-top: 4px; }
+    .file-preview {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--layer-02);
+      border: 1px solid var(--success);
+      padding: 0.75rem 1rem;
+      margin-top: 0.5rem;
+    }
+    .file-preview-icon { font-size: 20px; }
+    .file-preview-name { font-size: 13px; color: var(--text-primary); font-family: 'IBM Plex Mono', monospace; }
+    .file-preview-size { font-size: 11px; color: var(--text-helper); }
+    .file-preview-remove {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--error);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 4px;
+    }
+
+    /* ── Schedule toggle ──────────────────────────────────────── */
+    .toggle-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--layer-03);
+      border: 1px solid var(--border);
+      transition: background 0.15s, border-color 0.15s;
+      border-radius: 12px;
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .toggle input:checked ~ .toggle-track { background: var(--interactive); border-color: var(--interactive); }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(24px); background: #fff; }
+    .toggle-label { font-size: 14px; color: var(--text-primary); cursor: pointer; }
+
+    .schedule-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 480px) { .schedule-fields { grid-template-columns: 1fr; } }
+
+    /* ── Buttons ──────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      height: 48px;
+      padding: 0 1rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--interactive);
+      color: #fff;
+      width: 100%;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--interactive-hover); }
+    .btn-primary:active:not(:disabled) { background: var(--interactive-active); }
+    .btn-primary:disabled {
+      background: var(--layer-03);
+      color: var(--text-disabled);
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: var(--layer-02);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--bg-hover); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--link);
+      padding: 0 4px;
+      height: auto;
+    }
+    .btn-ghost:hover { text-decoration: underline; }
+
+    .btn-sm { height: 32px; font-size: 12px; padding: 0 12px; }
+
+    /* ── Inline Notification ──────────────────────────────────── */
+    .notification {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      border-left: 3px solid;
+      margin-bottom: 1rem;
+      border-radius: 0;
+    }
+    .notification.success { background: color-mix(in srgb, var(--success) 10%, transparent); border-color: var(--success); }
+    .notification.error { background: color-mix(in srgb, var(--error) 10%, transparent); border-color: var(--error); }
+    .notification.warning { background: color-mix(in srgb, var(--warning) 10%, transparent); border-color: var(--warning); }
+    .notification.info { background: color-mix(in srgb, var(--interactive) 10%, transparent); border-color: var(--interactive); }
+    .notification-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+    .notification-content {}
+    .notification-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .notification-body { font-size: 13px; color: var(--text-secondary); word-break: break-all; }
+    .notification a { color: var(--link); }
+
+    /* ── Profile Bar ──────────────────────────────────────────── */
+    .profile-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--layer-02);
+      border: 1px solid var(--success);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+    }
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--layer-03);
+      border: 2px solid var(--interactive);
+    }
+    .profile-avatar-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--interactive);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #fff;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .profile-info .name { font-size: 14px; font-weight: 600; }
+    .profile-info .urn { font-size: 11px; color: var(--text-helper); font-family: 'IBM Plex Mono', monospace; }
+    .profile-connected {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--success);
+      font-weight: 500;
+    }
+
+    /* ── Loading Spinner ──────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* ── Progress Bar ─────────────────────────────────────────── */
+    .progress-bar-wrapper {
+      margin-top: 1rem;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .progress-track {
+      height: 8px;
+      background: var(--layer-02);
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--interactive);
+      transition: width 0.3s ease;
+    }
+
+    /* ── Utilities ────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .text-muted { color: var(--text-helper); font-size: 12px; }
+    .mt-4 { margin-top: 1rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 1.5rem 0;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      background: var(--layer-03);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 2px 8px;
+      gap: 4px;
+    }
+
+    /* ── Fade-in ──────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .tile { animation: fadeUp 0.25s ease both; }
+    .tile:nth-child(2) { animation-delay: 0.05s; }
+    .tile:nth-child(3) { animation-delay: 0.1s; }
+    .tile:nth-child(4) { animation-delay: 0.15s; }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <header>
+    <div class="header-left">
+      <a href="#" class="header-logo">
+        <!-- IBM logo mark -->
+        <svg width="20" height="8" viewBox="0 0 20 8" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="2" height="8"/><rect x="3" y="0" width="2" height="8"/>
+          <rect x="6" y="0" width="8" height="2"/><rect x="6" y="3" width="8" height="2"/><rect x="6" y="6" width="8" height="2"/>
+          <rect x="15" y="0" width="2" height="8"/><rect x="18" y="0" width="2" height="8"/>
+        </svg>
+        LinkedIn Publisher
+      </a>
+      <div class="header-divider"></div>
+      <span class="header-product">Post Manager</span>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+          <path d="M16 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0-2a6 6 0 1 1 0 12A6 6 0 0 1 16 10zm0-7a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V4a1 1 0 0 1 1-1zm0 21a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1zM4 15h2a1 1 0 0 1 0 2H4a1 1 0 0 1 0-2zm21 0h2a1 1 0 0 1 0 2h-2a1 1 0 0 1 0-2zM6.22 6.22a1 1 0 0 1 1.42 0L9.05 7.6A1 1 0 0 1 7.6 9.05L6.22 7.64a1 1 0 0 1 0-1.42zm16.56 16.56a1 1 0 0 1 1.42 0l1.41 1.41a1 1 0 0 1-1.41 1.41l-1.42-1.41a1 1 0 0 1 0-1.41zm0-16.56a1 1 0 0 1 0 1.42L21.37 9.05A1 1 0 0 1 19.95 7.6l1.41-1.38a1 1 0 0 1 1.42 0zM6.22 22.78a1 1 0 0 1 0-1.41L7.6 19.95a1 1 0 0 1 1.45 1.42l-1.41 1.41a1 1 0 0 1-1.42 0z"/>
+        </svg>
+        <span id="themeLabel">Light mode</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main ───────────────────────────────────────────────────── -->
+  <main>
+    <div class="page-heading">
+      <h1>Post to LinkedIn</h1>
+      <p>Connect your account, write your post, and publish or schedule — all in one place.</p>
+    </div>
+
+    <!-- ── Notifications area ───────────────────────────────────── -->
+    <div id="notifArea"></div>
+
+    <!-- ── STEP 1: Connect ─────────────────────────────────────── -->
+    <div class="tile" id="step1Tile">
+      <div class="tile-header">
+        <div class="tile-step" id="step1Badge">1</div>
+        <div>
+          <div class="tile-title">Connect LinkedIn Account</div>
+          <div class="tile-subtitle">Paste your access token from LinkedIn Developer Portal</div>
+        </div>
+      </div>
+
+      <!-- profile bar (hidden until connected) -->
+      <div id="profileBar" class="profile-bar hidden">
+        <div id="profileAvatar" class="profile-avatar-placeholder">👤</div>
+        <div class="profile-info">
+          <div class="name" id="profileName">—</div>
+          <div class="urn" id="profileUrn">—</div>
+        </div>
+        <div class="profile-connected">
+          <span>●</span> Connected
+        </div>
+      </div>
+
+      <div id="tokenForm">
+        <div class="field-group">
+          <label for="accessToken">
+            Access Token
+            <span class="helper-text"> — from developer.linkedin.com</span>
+          </label>
+          <input type="password" id="accessToken" placeholder="AQX..." autocomplete="off" />
+        </div>
+        <div class="mt-4">
+          <button class="btn btn-primary" onclick="verifyToken()" id="verifyBtn">
+            Verify & Connect
+          </button>
+        </div>
+        <p class="text-muted mt-4">
+          Your token is sent directly to LinkedIn — it is never stored on any server.
+        </p>
+      </div>
+
+      <div id="reconnectArea" class="hidden mt-4">
+        <button class="btn btn-secondary btn-sm" onclick="resetConnection()">Use different account</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Post Type ───────────────────────────────────── -->
+    <div class="tile" id="step2Tile">
+      <div class="tile-header">
+        <div class="tile-step" id="step2Badge">2</div>
+        <div>
+          <div class="tile-title">Post Type</div>
+          <div class="tile-subtitle">Choose what kind of content you want to share</div>
+        </div>
+      </div>
+
+      <div class="radio-group">
+        <label class="radio-tile active" id="rt-text" onclick="selectPostType('text', this)">
+          <input type="radio" name="postType" value="text" checked />
+          <span class="radio-icon">📝</span>
+          <span class="radio-label">Text</span>
+          <span class="radio-desc">Text only post</span>
+        </label>
+        <label class="radio-tile" id="rt-image" onclick="selectPostType('image', this)">
+          <input type="radio" name="postType" value="image" />
+          <span class="radio-icon">🖼️</span>
+          <span class="radio-label">Image</span>
+          <span class="radio-desc">Text + image</span>
+        </label>
+        <label class="radio-tile" id="rt-video" onclick="selectPostType('video', this)">
+          <input type="radio" name="postType" value="video" />
+          <span class="radio-icon">🎬</span>
+          <span class="radio-label">Video</span>
+          <span class="radio-desc">Text + video</span>
+        </label>
+      </div>
+
+      <!-- Image drop zone -->
+      <div id="imageZone" class="hidden mt-4">
+        <label>Image File <span class="helper-text">— JPG or PNG, max 5 MB</span></label>
+        <div class="dropzone" id="imageDropZone"
+             ondragover="handleDragOver(event,'imageDropZone')"
+             ondragleave="handleDragLeave('imageDropZone')"
+             ondrop="handleDrop(event,'imageFile','imageDropZone')">
+          <input type="file" id="imageFile" accept="image/jpeg,image/png" onchange="handleFileSelect('imageFile','imagePreview')"/>
+          <div class="dropzone-icon">🖼️</div>
+          <div class="dropzone-text">Drag & drop or <strong>browse</strong></div>
+          <div class="dropzone-hint">JPG, PNG — up to 5 MB</div>
+        </div>
+        <div id="imagePreview" class="hidden"></div>
+      </div>
+
+      <!-- Video drop zone -->
+      <div id="videoZone" class="hidden mt-4">
+        <label>Video File <span class="helper-text">— MP4, max 200 MB</span></label>
+        <div class="dropzone" id="videoDropZone"
+             ondragover="handleDragOver(event,'videoDropZone')"
+             ondragleave="handleDragLeave('videoDropZone')"
+             ondrop="handleDrop(event,'videoFile','videoDropZone')">
+          <input type="file" id="videoFile" accept="video/mp4,video/*" onchange="handleFileSelect('videoFile','videoPreview')"/>
+          <div class="dropzone-icon">🎬</div>
+          <div class="dropzone-text">Drag & drop or <strong>browse</strong></div>
+          <div class="dropzone-hint">MP4 recommended — up to 200 MB</div>
+        </div>
+        <div id="videoPreview" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Message ─────────────────────────────────────── -->
+    <div class="tile" id="step3Tile">
+      <div class="tile-header">
+        <div class="tile-step" id="step3Badge">3</div>
+        <div>
+          <div class="tile-title">Write Your Post</div>
+          <div class="tile-subtitle">Hashtags go inside the message — e.g. #AI #Learning</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label for="postMessage">Message</label>
+        <textarea id="postMessage" placeholder="What do you want to share today? Use #hashtags inside your text." oninput="updateCharCount()"></textarea>
+        <div class="char-counter" id="charCounter">0 / 3000</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: Schedule ────────────────────────────────────── -->
+    <div class="tile" id="step4Tile">
+      <div class="tile-header">
+        <div class="tile-step" id="step4Badge">4</div>
+        <div>
+          <div class="tile-title">When to Publish</div>
+          <div class="tile-subtitle">Post immediately or schedule for later</div>
+        </div>
+      </div>
+
+      <div class="toggle-wrapper">
+        <label class="toggle" id="scheduleToggle">
+          <input type="checkbox" id="scheduleCheck" onchange="toggleSchedule()" />
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+        <span class="toggle-label" onclick="document.getElementById('scheduleCheck').click()">Schedule for later</span>
+      </div>
+
+      <div id="scheduleFields" class="hidden">
+        <div class="schedule-fields">
+          <div class="field-group">
+            <label for="scheduleTime">Date & Time</label>
+            <input type="datetime-local" id="scheduleTime" />
+          </div>
+          <div class="field-group">
+            <label for="tzSelect">Timezone</label>
+            <select id="tzSelect">
+              <option value="Asia/Kolkata">IST — India</option>
+              <option value="UTC">UTC — Universal</option>
+              <option value="America/New_York">EST — New York</option>
+              <option value="America/Los_Angeles">PST — Los Angeles</option>
+              <option value="Europe/London">GMT — London</option>
+              <option value="Asia/Tokyo">JST — Tokyo</option>
+              <option value="Asia/Singapore">SGT — Singapore</option>
+            </select>
+          </div>
+        </div>
+        <div class="notification warning" id="scheduleWarning" style="margin-top:0">
+          <div class="notification-icon">⚠️</div>
+          <div class="notification-content">
+            <div class="notification-title">Keep this tab open</div>
+            <div class="notification-body">LinkedIn's API has no native scheduling — the browser must stay active until posting.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: Publish ─────────────────────────────────────── -->
+    <div class="tile" id="step5Tile">
+      <div class="tile-header">
+        <div class="tile-step" id="step5Badge">5</div>
+        <div>
+          <div class="tile-title">Publish</div>
+          <div class="tile-subtitle">Review and post to LinkedIn</div>
+        </div>
+      </div>
+
+      <div id="publishStatus" class="hidden">
+        <div class="progress-bar-wrapper">
+          <div class="progress-label">
+            <span id="progressLabel">Publishing…</span>
+            <span id="progressPct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="publishBtn" onclick="publishPost()">
+        🚀 Publish to LinkedIn
+      </button>
+
+      <p class="text-muted mt-4">
+        <span id="backendUrl-label">Backend URL: </span>
+        <input type="text" id="backendUrl" value="http://localhost:8000"
+               style="width:auto;display:inline;padding:4px 8px;font-size:12px;font-family:'IBM Plex Mono',monospace;background:var(--layer-02);border:1px solid var(--border-subtle);color:var(--text-secondary);" />
+      </p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let state = {
+    connected: false,
+    accessToken: '',
+    personUrn: '',
+    postType: 'text',
+  };
+
+  // ── Theme ──────────────────────────────────────────────────────────────────
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    const icon = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if (isDark) {
+      label.textContent = 'Dark mode';
+      icon.innerHTML = `<path d="M16 4a12 12 0 1 0 0 24A12 12 0 0 0 16 4zm0 22a10 10 0 1 1 0-20A10 10 0 0 1 16 26z"/>`;
+    } else {
+      label.textContent = 'Light mode';
+      icon.innerHTML = `<path d="M16 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0-2a6 6 0 1 1 0 12A6 6 0 0 1 16 10zm0-7a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V4a1 1 0 0 1 1-1zm0 21a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0v-2a1 1 0 0 1 1-1zM4 15h2a1 1 0 0 1 0 2H4a1 1 0 0 1 0-2zm21 0h2a1 1 0 0 1 0 2h-2a1 1 0 0 1 0-2zM6.22 6.22a1 1 0 0 1 1.42 0L9.05 7.6A1 1 0 0 1 7.6 9.05L6.22 7.64a1 1 0 0 1 0-1.42zm16.56 16.56a1 1 0 0 1 1.42 0l1.41 1.41a1 1 0 0 1-1.41 1.41l-1.42-1.41a1 1 0 0 1 0-1.41zm0-16.56a1 1 0 0 1 0 1.42L21.37 9.05A1 1 0 0 1 19.95 7.6l1.41-1.38a1 1 0 0 1 1.42 0zM6.22 22.78a1 1 0 0 1 0-1.41L7.6 19.95a1 1 0 0 1 1.45 1.42l-1.41 1.41a1 1 0 0 1-1.42 0z"/>`;
+    }
+  }
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+  function showNotif(type, title, body, id = null) {
+    const area = document.getElementById('notifArea');
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const div = document.createElement('div');
+    div.className = `notification ${type}`;
+    if (id) div.id = id;
+    div.innerHTML = `
+      <div class="notification-icon">${icons[type] || 'ℹ️'}</div>
+      <div class="notification-content">
+        <div class="notification-title">${title}</div>
+        <div class="notification-body">${body}</div>
+      </div>`;
+    area.appendChild(div);
+    return div;
+  }
+
+  function clearNotifs(id = null) {
+    if (id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    } else {
+      document.getElementById('notifArea').innerHTML = '';
+    }
+  }
+
+  // ── Token Verify ───────────────────────────────────────────────────────────
+  async function verifyToken() {
+    const token = document.getElementById('accessToken').value.trim();
+    if (!token) { showNotif('error', 'Token required', 'Please paste your LinkedIn Access Token.'); return; }
+
+    const btn = document.getElementById('verifyBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Verifying…';
+    clearNotifs();
+
+    try {
+      const base = document.getElementById('backendUrl').value.trim();
+      const res = await fetch(`${base}/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Verification failed');
+
+      // Store
+      state.accessToken = token;
+      state.personUrn = data.person_urn;
+      state.connected = true;
+
+      // Update UI
+      document.getElementById('profileName').textContent = data.name || 'Unknown';
+      document.getElementById('profileUrn').textContent = data.person_urn;
+      const av = document.getElementById('profileAvatar');
+      if (data.picture) {
+        av.outerHTML = `<img class="profile-avatar" id="profileAvatar" src="${data.picture}" alt="avatar" />`;
+      } else {
+        av.textContent = (data.name || '?')[0].toUpperCase();
+      }
+
+      document.getElementById('profileBar').classList.remove('hidden');
+      document.getElementById('tokenForm').classList.add('hidden');
+      document.getElementById('reconnectArea').classList.remove('hidden');
+      document.getElementById('step1Badge').classList.add('done');
+      document.getElementById('step1Badge').textContent = '✓';
+
+      showNotif('success', `Connected as ${data.name}`, `Person URN: ${data.person_urn}`);
+    } catch(e) {
+      showNotif('error', 'Connection failed', e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Verify & Connect';
+    }
+  }
+
+  function resetConnection() {
+    state.connected = false; state.accessToken = ''; state.personUrn = '';
+    document.getElementById('profileBar').classList.add('hidden');
+    document.getElementById('tokenForm').classList.remove('hidden');
+    document.getElementById('reconnectArea').classList.add('hidden');
+    document.getElementById('accessToken').value = '';
+    const badge = document.getElementById('step1Badge');
+    badge.classList.remove('done');
+    badge.textContent = '1';
+    clearNotifs();
+  }
+
+  // ── Post Type ──────────────────────────────────────────────────────────────
+  function selectPostType(type, el) {
+    state.postType = type;
+    document.querySelectorAll('.radio-tile').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('imageZone').classList.add('hidden');
+    document.getElementById('videoZone').classList.add('hidden');
+    if (type === 'image') document.getElementById('imageZone').classList.remove('hidden');
+    if (type === 'video') document.getElementById('videoZone').classList.remove('hidden');
+  }
+
+  // ── File Handling ──────────────────────────────────────────────────────────
+  function handleDragOver(e, zoneId) {
+    e.preventDefault();
+    document.getElementById(zoneId).classList.add('drag-over');
+  }
+  function handleDragLeave(zoneId) {
+    document.getElementById(zoneId).classList.remove('drag-over');
+  }
+  function handleDrop(e, inputId, zoneId) {
+    e.preventDefault();
+    document.getElementById(zoneId).classList.remove('drag-over');
+    const input = document.getElementById(inputId);
+    const dt = e.dataTransfer;
+    if (dt.files.length) {
+      const previewId = inputId === 'imageFile' ? 'imagePreview' : 'videoPreview';
+      // Simulate input change
+      Object.defineProperty(input, 'files', { value: dt.files, configurable: true });
+      renderFilePreview(dt.files[0], previewId, inputId);
+    }
+  }
+  function handleFileSelect(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    if (input.files.length) renderFilePreview(input.files[0], previewId, inputId);
+  }
+  function renderFilePreview(file, previewId, inputId) {
+    const preview = document.getElementById(previewId);
+    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+    const icon = inputId === 'imageFile' ? '🖼️' : '🎬';
+    preview.innerHTML = `
+      <div class="file-preview">
+        <span class="file-preview-icon">${icon}</span>
+        <div>
+          <div class="file-preview-name">${file.name}</div>
+          <div class="file-preview-size">${sizeMB} MB</div>
+        </div>
+        <button class="file-preview-remove" onclick="removeFile('${inputId}','${previewId}')" title="Remove">✕</button>
+      </div>`;
+    preview.classList.remove('hidden');
+  }
+  function removeFile(inputId, previewId) {
+    document.getElementById(inputId).value = '';
+    const p = document.getElementById(previewId);
+    p.innerHTML = '';
+    p.classList.add('hidden');
+  }
+
+  // ── Char Counter ───────────────────────────────────────────────────────────
+  function updateCharCount() {
+    const len = document.getElementById('postMessage').value.length;
+    const el = document.getElementById('charCounter');
+    el.textContent = `${len} / 3000`;
+    el.className = 'char-counter' + (len > 2800 ? (len > 3000 ? ' error-count' : ' warn') : '');
+  }
+
+  // ── Schedule Toggle ────────────────────────────────────────────────────────
+  function toggleSchedule() {
+    const on = document.getElementById('scheduleCheck').checked;
+    document.getElementById('scheduleFields').classList.toggle('hidden', !on);
+    if (on) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 60);
+      document.getElementById('scheduleTime').value = now.toISOString().slice(0,16);
+    }
+  }
+
+  // ── Progress ───────────────────────────────────────────────────────────────
+  function setProgress(pct, label) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressLabel').textContent = label;
+  }
+
+  // ── Publish ────────────────────────────────────────────────────────────────
+  async function publishPost() {
+    clearNotifs();
+
+    if (!state.connected) {
+      showNotif('error', 'Not connected', 'Please connect your LinkedIn account first (Step 1).');
+      return;
+    }
+
+    const message = document.getElementById('postMessage').value.trim();
+    if (!message) { showNotif('error', 'Message required', 'Please write your post content in Step 3.'); return; }
+    if (message.length > 3000) { showNotif('error', 'Message too long', 'LinkedIn limit is 3000 characters.'); return; }
+
+    const base = document.getElementById('backendUrl').value.trim();
+    const btn = document.getElementById('publishBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Publishing…';
+
+    const statusDiv = document.getElementById('publishStatus');
+    statusDiv.classList.remove('hidden');
+    setProgress(10, 'Preparing request…');
+
+    try {
+      const fd = new FormData();
+      fd.append('access_token', state.accessToken);
+      fd.append('person_urn', state.personUrn);
+      fd.append('message', message);
+
+      const scheduled = document.getElementById('scheduleCheck').checked;
+      if (scheduled) {
+        fd.append('scheduled_at', document.getElementById('scheduleTime').value);
+        fd.append('tz_name', document.getElementById('tzSelect').value);
+      }
+
+      let endpoint = '/post/text';
+      if (state.postType === 'image') {
+        const imgFile = document.getElementById('imageFile').files[0];
+        if (!imgFile) { showNotif('error', 'No image selected', 'Please upload an image in Step 2.'); return; }
+        fd.append('image', imgFile);
+        endpoint = '/post/image';
+        setProgress(20, 'Uploading image…');
+      } else if (state.postType === 'video') {
+        const vidFile = document.getElementById('videoFile').files[0];
+        if (!vidFile) { showNotif('error', 'No video selected', 'Please upload a video in Step 2.'); return; }
+        fd.append('video', vidFile);
+        endpoint = '/post/video';
+        setProgress(20, 'Uploading video… (this may take a while)');
+      }
+
+      setProgress(40, 'Sending to LinkedIn…');
+
+      const res = await fetch(`${base}${endpoint}`, { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Publishing failed');
+
+      setProgress(100, 'Published!');
+      document.getElementById('step5Badge').classList.add('done');
+      document.getElementById('step5Badge').textContent = '✓';
+
+      showNotif('success', '🎉 Post published!',
+        `<a href="${data.post_url}" target="_blank" rel="noopener">${data.post_url}</a>`);
+
+      btn.innerHTML = '✓ Published';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Publish to LinkedIn';
+        statusDiv.classList.add('hidden');
+        document.getElementById('step5Badge').classList.remove('done');
+        document.getElementById('step5Badge').textContent = '5';
+      }, 5000);
+
+    } catch(e) {
+      showNotif('error', 'Publish failed', e.message);
+      btn.disabled = false;
+      btn.innerHTML = '🚀 Publish to LinkedIn';
+      statusDiv.classList.add('hidden');
+    }
+  }
+</script>
+</body>
+</html>

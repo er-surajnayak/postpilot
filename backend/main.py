@@ -8,23 +8,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse
 from dotenv import load_dotenv
 
-from auth import get_auth_url, exchange_code, list_connected_accounts, disconnect_account
+from auth import (
+    get_auth_url, exchange_code, list_connected_accounts, 
+    disconnect_account, verify_and_save_linkedin_token,
+    get_linkedin_auth_url, exchange_linkedin_code
+)
 from models import SchedulePost
 from scheduler import add_job, get_all_jobs, get_job, delete_job, start_scheduler, stop_scheduler
 from youtube import list_videos
 
-load_dotenv()
+load_dotenv(override=True)
 
 UPLOADS_DIR = Path("uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://postpilot-red-tau.vercel.app")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
-# Build list of allowed origins — includes env var + all *.vercel.app previews for this project
 ALLOWED_ORIGINS = [
     FRONTEND_URL,
-    "https://postpilot-red-tau.vercel.app",
-    "https://postpilot-ruddy.vercel.app",
     "http://localhost:5173",
     "http://localhost:3000",
 ]
@@ -66,21 +67,62 @@ def auth_callback(code: str = None, error: str = None, state: str = None):
         account = exchange_code(code, state=state)
         name    = account["channel_name"].replace(" ", "%20")
         return RedirectResponse(
-            f"{FRONTEND_URL}/connect?success=true&channel={name}&id={account['channel_id']}"
+            f"{FRONTEND_URL}/connect?success=true&platform=youtube&channel={name}&id={account['channel_id']}"
         )
     except Exception as e:
         return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
 
 
+@app.get("/auth/linkedin/login")
+def linkedin_login():
+    """Redirect user to LinkedIn OAuth screen."""
+    try:
+        url = get_linkedin_auth_url()
+        return RedirectResponse(url)
+    except Exception as e:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
+
+
+@app.get("/auth/linkedin/callback")
+def linkedin_callback(code: str = None, error: str = None, state: str = None):
+    """LinkedIn redirects here after user approves."""
+    if error or not code:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error=access_denied")
+    try:
+        account = exchange_linkedin_code(code)
+        name    = account["name"].replace(" ", "%20")
+        return RedirectResponse(
+            f"{FRONTEND_URL}/connect?success=true&platform=linkedin&channel={name}&id={account['person_urn']}"
+        )
+    except Exception as e:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
+
+
+
+@app.post("/auth/linkedin/verify")
+def linkedin_verify(token: str = Form(...)):
+    """Verify and save LinkedIn manual access token."""
+    try:
+        account = verify_and_save_linkedin_token(token)
+        return {
+            "success": True,
+            "account_id": account["person_urn"],
+            "name": account["name"],
+            "thumbnail": account["picture"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.get("/auth/accounts")
 def get_accounts():
-    """List all connected YouTube accounts."""
+    """List all connected YouTube & LinkedIn accounts."""
     return list_connected_accounts()
 
 
-@app.delete("/auth/accounts/{channel_id}")
-def remove_account(channel_id: str):
-    if disconnect_account(channel_id):
+@app.delete("/auth/accounts/{platform}/{account_id}")
+def remove_account(platform: str, account_id: str):
+    if disconnect_account(platform, account_id):
         return {"message": "Account disconnected"}
     raise HTTPException(status_code=404, detail="Account not found")
 
@@ -89,47 +131,47 @@ def remove_account(channel_id: str):
 
 @app.post("/posts/upload")
 async def schedule_post(
-    channel_id:   str        = Form(...),
-    title:        str        = Form(...),
-    description:  str        = Form(""),
-    tags:         str        = Form(""),          # comma-separated
-    privacy:      str        = Form("private"),
-    is_short:     bool       = Form(False),
-    scheduled_at: str        = Form(None),        # ISO datetime string or empty
+    platform:     str        = Form("youtube"),
+    account_id:   str        = Form(...),
+    title:        str        = Form(""),          # YT: Title, LI: fallback message
+    message:      str        = Form(""),          # LI: Message
+    description:  str        = Form(""),          # YT: Description
+    tags:         str        = Form(""),          # YT: comma-separated
+    privacy:      str        = Form("private"),   # YT: privacy
+    is_short:     bool       = Form(False),       # YT: is_short
+    scheduled_at: str        = Form(None),        # ISO datetime string (local)
     timezone:     str        = Form("Asia/Kolkata"),
     notify:       bool       = Form(False),
-    video:        UploadFile = File(...),
-    thumbnail:    UploadFile = File(None),
+    video:        UploadFile = File(None),
+    image:        UploadFile = File(None),
 ):
-    # Save video file
-    video_path = UPLOADS_DIR / video.filename
-    with open(video_path, "wb") as f:
-        shutil.copyfileobj(video.file, f)
-
-    # Save thumbnail if provided
-    thumb_path = None
-    if thumbnail and thumbnail.filename:
-        thumb_path = UPLOADS_DIR / thumbnail.filename
-        with open(thumb_path, "wb") as f:
-            shutil.copyfileobj(thumbnail.file, f)
+    # Determine the file to save
+    media_file = video or image
+    media_path = None
+    if media_file and media_file.filename:
+        media_path = UPLOADS_DIR / media_file.filename
+        with open(media_path, "wb") as f:
+            shutil.copyfileobj(media_file.file, f)
 
     post_data = {
-        "channel_id":   channel_id,
+        "platform":     platform,
+        "account_id":   account_id,
         "title":        title,
+        "message":      message,
         "description":  description,
         "tags":         [t.strip() for t in tags.split(",") if t.strip()],
         "privacy":      privacy,
         "is_short":     is_short,
-        "scheduled_at": scheduled_at or None,
+        "scheduled_at": scheduled_at if (scheduled_at and scheduled_at != "null") else None,
         "timezone":     timezone,
         "notify":       notify,
     }
 
-    job_id = add_job(post_data, str(video_path), str(thumb_path) if thumb_path else None)
+    job_id = add_job(post_data, str(media_path) if media_path else None)
 
     return {
         "job_id":  job_id,
-        "message": "Scheduled" if scheduled_at else "Upload started",
+        "message": "Scheduled" if (scheduled_at and scheduled_at != "null") else "Upload started",
         "status":  "queued",
     }
 
@@ -155,7 +197,7 @@ def cancel_post(job_id: str):
     raise HTTPException(status_code=404, detail="Post not found")
 
 
-# ── YouTube data routes ───────────────────────────────────────
+# ── Internal YT data ──────────────────────────────────────────
 
 @app.get("/youtube/{channel_id}/videos")
 def get_channel_videos(channel_id: str, max_results: int = 20):
@@ -168,3 +210,4 @@ def get_channel_videos(channel_id: str, max_results: int = 20):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
