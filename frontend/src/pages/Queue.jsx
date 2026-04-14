@@ -22,9 +22,18 @@ import {
   Close,
   LogoYoutube,
   LogoLinkedin,
+  LogoFacebook,
+  LogoInstagram,
   Add,
 } from '@carbon/icons-react'
 import { getPosts, cancelPost } from '../api'
+
+const PLATFORM_META = {
+  youtube: { label: 'YouTube', color: '#ff0000', icon: LogoYoutube, cta: 'Watch on YouTube' },
+  linkedin: { label: 'LinkedIn', color: '#0077b5', icon: LogoLinkedin, cta: 'View on LinkedIn' },
+  facebook: { label: 'Meta', color: '#1877f2', icon: LogoFacebook, cta: 'View on Facebook' },
+  instagram: { label: 'Instagram', color: '#e1306c', icon: LogoInstagram, cta: 'View on Instagram' },
+}
 
 const STATUS_CONFIG = {
   queued:    { type: 'warm-gray', label: 'Queued'    },
@@ -42,7 +51,8 @@ function PostCard({ post, onCancel }) {
 
   const canCancel = ['queued', 'scheduled'].includes(post.status)
   const cfg = STATUS_CONFIG[post.status] || STATUS_CONFIG.queued
-  const isYT = post.platform === 'youtube'
+  const platformMeta = PLATFORM_META[post.platform] || PLATFORM_META.youtube
+  const Icon = platformMeta.icon
 
   const handleCancel = async () => {
     if (!window.confirm('Cancel this post?')) return
@@ -73,10 +83,10 @@ function PostCard({ post, onCancel }) {
           {/* Icon */}
           <div style={{
             width: 44, height: 44, borderRadius: 4, flexShrink: 0,
-            background: isYT ? '#ff0000' : '#0077b5',
+            background: platformMeta.color,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {isYT ? <LogoYoutube size={24} style={{ color: '#fff' }} /> : <LogoLinkedin size={24} style={{ color: '#fff' }} />}
+            <Icon size={24} style={{ color: '#fff' }} />
           </div>
 
           {/* Info */}
@@ -101,7 +111,7 @@ function PostCard({ post, onCancel }) {
               <Button
                 size="sm" kind="ghost" hasIconOnly
                 renderIcon={Launch}
-                iconDescription={isYT ? "Watch on YouTube" : "View on LinkedIn"}
+                iconDescription={platformMeta.cta}
                 href={post.media_url || post.video_url}
                 target="_blank"
                 rel="noreferrer"
@@ -228,7 +238,7 @@ export default function Queue() {
           <div>
             <h1 style={{ marginBottom: '0.5rem' }}>Scheduler Queue</h1>
             <p style={{ color: 'var(--cds-text-secondary)', margin: 0 }}>
-              Monitor and manage all scheduled posts across YouTube and LinkedIn.
+              Monitor and manage all scheduled posts across YouTube, LinkedIn, Meta, and Instagram.
             </p>
           </div>
           <Button
@@ -302,4 +312,3 @@ export default function Queue() {
     </Grid>
   )
 }
-

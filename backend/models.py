@@ -4,11 +4,11 @@ from datetime import datetime
 
 
 class SchedulePost(BaseModel):
-    platform:     str             # youtube | linkedin
-    account_id:   str             # channel_id for YT, person_urn for LI
-    title:        Optional[str]   = ""  # YT Title / LI Message (if message is empty)
-    description:  Optional[str]   = ""  # YT Description
-    message:      Optional[str]   = ""  # LI Message
+    platform:     str             # youtube | linkedin | facebook | instagram
+    account_id:   str             # channel_id, urn, page_id, or instagram_user_id
+    title:        Optional[str]   = ""  # YT title / fallback caption
+    description:  Optional[str]   = ""  # YT description
+    message:      Optional[str]   = ""  # LI/FB/IG caption
     tags:         List[str]       = []
     privacy:      str             = "private"
     is_short:     bool            = False
@@ -25,9 +25,8 @@ class PostStatus(BaseModel):
     account_name: Optional[str]   = None
     title:        str
     status:       str             # queued | uploading | scheduled | published | failed
-    media_id:     Optional[str]   = None # video_id for YT, urn for LI
-    media_url:    Optional[str]   = None # video_url for YT, post_url for LI
+    media_id:     Optional[str]   = None # platform-specific media/post id
+    media_url:    Optional[str]   = None # video_url/post_url/permalink
     scheduled_at: Optional[str]   = None
     error:        Optional[str]   = None
     created_at:   str
-

@@ -16,3 +16,13 @@ services:
         sync: false          # set to your Vercel URL, e.g. https://postpilot.vercel.app
       - key: BACKEND_URL
         sync: false          # set to https://postpilot-backend.onrender.com
+      - key: LINKEDIN_CLIENT_ID
+        sync: false
+      - key: LINKEDIN_CLIENT_SECRET
+        sync: false
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_GRAPH_VERSION
+        value: v23.0

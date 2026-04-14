@@ -11,6 +11,52 @@ def get_headers(token: str):
     }
 
 
+def fetch_linkedin_user(token: str) -> dict:
+    """Fetch profile info from LinkedIn v2 UserInfo (OpenID Connect)."""
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Use userinfo instead of me for OpenID compatibility
+    r = requests.get("https://api.linkedin.com/v2/userinfo", headers=headers)
+    if r.status_code >= 400:
+        raise HTTPException(status_code=r.status_code, detail=f"LinkedIn Userinfo failed: {r.text}")
+    
+    data = r.json()
+    person_urn = f"urn:li:person:{data['sub']}"
+    
+    return {
+        "id": person_urn,
+        "name": data.get("name", ""),
+        "given_name": data.get("given_name", ""),
+        "family_name": data.get("family_name", ""),
+        "picture": data.get("picture", ""),
+        "email": data.get("email", "")
+    }
+
+
+def _get_linkedin_email(token: str) -> str:
+    try:
+        headers = get_headers(token)
+        r = requests.get("https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))", headers=headers)
+        if r.status_code == 200:
+            data = r.json()
+            return data["elements"][0]["handle~"]["emailAddress"]
+    except Exception:
+        pass
+    return ""
+
+
+def _get_linkedin_picture(token: str) -> str:
+    try:
+        headers = get_headers(token)
+        r = requests.get("https://api.linkedin.com/v2/me?projection=(id,profilePicture(displayImage~:playableStreams))", headers=headers)
+        if r.status_code == 200:
+            data = r.json()
+            return data["profilePicture"]["displayImage~"]["playableStreams"][-1]["identifiers"][0]["identifier"]
+    except Exception:
+        pass
+    return ""
+
+
 def upload_image(token: str, person_urn: str, image_path: str) -> str:
     headers = get_headers(token)
     

@@ -1,7 +1,7 @@
 # PostPilot — Social Media Scheduler
 
-A fullstack YouTube post scheduler with a clean UI. Schedule videos, Shorts,
-set privacy, upload thumbnails — all from a browser.
+A fullstack social media scheduler with a clean UI. Schedule YouTube videos,
+LinkedIn posts, Facebook Page posts, and Instagram Business content from one place.
 
 ---
 
@@ -128,10 +128,31 @@ Frontend runs at: http://localhost:5173
 ```
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+META_APP_ID=your_meta_app_id
+META_APP_SECRET=your_meta_app_secret
+META_GRAPH_VERSION=v23.0
 FRONTEND_URL=http://localhost:5173
 BACKEND_URL=http://localhost:8000
 SECRET_KEY=any_random_string
 ```
+
+## Meta + Instagram Setup
+
+1. Create a Meta app at `https://developers.facebook.com/apps`
+2. App type: `Business`
+3. Add products:
+   - `Facebook Login`
+   - `Pages API`
+   - `Instagram Graph API`
+4. Add OAuth redirect URI:
+   - Local: `http://localhost:8000/auth/facebook/callback`
+   - Production: `https://your-backend-domain/auth/facebook/callback`
+5. In Meta Business, make sure your Instagram account is a Business account and linked to a Facebook Page
+6. Paste `META_APP_ID` and `META_APP_SECRET` into `backend/.env`
+
+Note: Instagram publishing requires `BACKEND_URL` to be publicly reachable because Meta fetches media from your backend at publish time.
 
 ---
 

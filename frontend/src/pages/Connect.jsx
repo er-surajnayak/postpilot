@@ -14,12 +14,20 @@ import {
   TextInput,
   Modal,
 } from '@carbon/react'
-import { Add, TrashCan, LogoYoutube, LogoLinkedin, CheckmarkFilled, User } from '@carbon/icons-react'
+import { Add, TrashCan, LogoYoutube, LogoLinkedin, LogoFacebook, LogoInstagram, CheckmarkFilled, User } from '@carbon/icons-react'
 import { getAccounts, disconnectAcct, verifyLinkedInToken } from '../api'
+
+const PLATFORM_META = {
+  youtube: { label: 'YouTube', color: 'var(--cds-interactive)', tag: 'red', icon: LogoYoutube },
+  linkedin: { label: 'LinkedIn', color: '#0077b5', tag: 'blue', icon: LogoLinkedin },
+  facebook: { label: 'Meta', color: '#1877f2', tag: 'blue', icon: LogoFacebook },
+  instagram: { label: 'Instagram', color: '#e1306c', tag: 'magenta', icon: LogoInstagram },
+}
 
 function AccountCard({ account, onDisconnect }) {
   const [confirming, setConfirming] = useState(false)
-  const isYT = account.platform === 'youtube'
+  const platformMeta = PLATFORM_META[account.platform] || PLATFORM_META.youtube
+  const Icon = platformMeta.icon
 
   return (
     <Layer>
@@ -36,10 +44,10 @@ function AccountCard({ account, onDisconnect }) {
             ) : (
               <div style={{
                 width: 52, height: 52, borderRadius: '50%',
-                background: isYT ? 'var(--cds-interactive)' : '#0077b5',
+                background: platformMeta.color,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                {isYT ? <LogoYoutube size={24} style={{ color: '#fff' }} /> : <LogoLinkedin size={24} style={{ color: '#fff' }} />}
+                <Icon size={24} style={{ color: '#fff' }} />
               </div>
             )}
             <CheckmarkFilled
@@ -59,13 +67,16 @@ function AccountCard({ account, onDisconnect }) {
               {account.account_name}
             </p>
             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>
-              {isYT ? `${parseInt(account.subscribers || 0).toLocaleString()} subscribers` : account.email}
+              {account.platform === 'youtube' && `${parseInt(account.subscribers || 0).toLocaleString()} subscribers`}
+              {account.platform === 'linkedin' && account.email}
+              {account.platform === 'facebook' && `${parseInt(account.followers || 0).toLocaleString()} followers`}
+              {account.platform === 'instagram' && (account.page_name ? `Linked Page: ${account.page_name}` : 'Instagram Business')}
             </p>
           </div>
 
           {/* Tag */}
-          <Tag type={isYT ? 'red' : 'blue'} renderIcon={isYT ? LogoYoutube : LogoLinkedin}>
-            {isYT ? 'YouTube' : 'LinkedIn'}
+          <Tag type={platformMeta.tag} renderIcon={Icon}>
+            {platformMeta.label}
           </Tag>
 
           {/* Actions */}
@@ -83,11 +94,12 @@ function AccountCard({ account, onDisconnect }) {
             </div>
           ) : (
             <Button
-              size="sm" kind="ghost" hasIconOnly
+              size="sm" kind="danger--ghost"
               renderIcon={TrashCan}
-              iconDescription="Disconnect"
               onClick={() => setConfirming(true)}
-            />
+            >
+              Disconnect
+            </Button>
           )}
         </div>
       </Tile>
@@ -101,9 +113,12 @@ export default function Connect() {
   const [toast, setToast]       = useState(null)
   const [searchParams]          = useSearchParams()
   
-  const [liModalOpen, setLiModalOpen] = useState(false)
-  const [liToken, setLiToken]           = useState('')
-  const [liLoading, setLiLoading]     = useState(false)
+  const [igModalOpen, setIgModalOpen] = useState(false)
+  const [igUsername, setIgUsername]   = useState('')
+  const [igPassword, setIgPassword]   = useState('')
+  const [ig2faCode, setIg2faCode]     = useState('')
+  const [igNeeds2fa, setIgNeeds2fa]   = useState(false)
+  const [igLoading, setIgLoading]     = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -118,30 +133,92 @@ export default function Connect() {
     const channel = searchParams.get('channel')
     const platform = searchParams.get('platform')
     if (success) {
-        const pStr = platform === 'linkedin' ? 'LinkedIn' : 'YouTube'
+        const pStr = PLATFORM_META[platform]?.label || 'Account'
         setToast({ msg: `Connected ${pStr}: ${decodeURIComponent(channel || 'account')}`, kind: 'success' })
     }
     if (error) setToast({ msg: decodeURIComponent(error), kind: 'error' })
   }, [])
 
   const handleDisconnect = async (platform, id) => {
-    await disconnectAcct(platform, id)
-    setToast({ msg: 'Account disconnected', kind: 'info' })
+    try {
+        await disconnectAcct(platform, id)
+        setToast({ msg: 'Account disconnected', kind: 'info' })
+        load()
+    } catch (err) {
+        setToast({ msg: `Failed to disconnect: ${err.message}`, kind: 'error' })
+    }
+  }
+
+  const handleDisconnectAll = async () => {
+    if (!window.confirm('Are you sure you want to disconnect ALL accounts?')) return
+    
+    setLoading(true)
+    for (const acct of accounts) {
+      try { await disconnectAcct(acct.platform, acct.account_id) } catch {}
+    }
+    setToast({ msg: 'All accounts disconnected', kind: 'info' })
     load()
   }
 
-  const handleLiVerify = async () => {
-    if (!liToken) return
-    setLiLoading(true)
+  const handleManualVerify = async () => {
+    if (!manualToken) return
+    setManualLoading(true)
     try {
-      const res = await verifyLinkedInToken(liToken)
-      setToast({ msg: `LinkedIn Connected: ${res.name}`, kind: 'success' })
+      let res
+      if (manualPlatform === 'linkedin') {
+        res = await verifyLinkedInToken(manualToken)
+        setToast({ msg: `LinkedIn Connected: ${res.name}`, kind: 'success' })
+      } else {
+        // Instagram or Facebook
+        const uri = manualPlatform === 'instagram' ? '/api/auth/instagram/verify' : '/api/auth/facebook/verify'
+        res = await fetch(uri, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `token=${encodeURIComponent(manualToken)}`
+        }).then(r => r.json())
+        
+        if (res.error || res.detail) throw new Error(res.error || res.detail)
+        setToast({ msg: `${manualPlatform === 'facebook' ? 'Facebook' : 'Instagram'} Connected: ${res.name || res.username}`, kind: 'success' })
+      }
       setLiModalOpen(false)
+      setManualToken('')
       load()
     } catch (err) {
       setToast({ msg: `Failed to verify: ${err.message}`, kind: 'error' })
     }
-    setLiLoading(false)
+    setManualLoading(false)
+  }
+
+  const handleInstagramConnect = async () => {
+    if (!igUsername || !igPassword) return
+    setIgLoading(true)
+    try {
+      const body = new URLSearchParams({
+        username: igUsername.trim(),
+        password: igPassword,
+        verification_code: ig2faCode.trim(),
+      })
+      const res = await fetch('/api/auth/instagram/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }).then(r => r.json())
+
+      if (res.requires_2fa) {
+        setIgNeeds2fa(true)
+        setIgLoading(false)
+        return
+      }
+      if (res.detail) throw new Error(res.detail)
+
+      setToast({ msg: `Instagram Connected: @${res.username}`, kind: 'success' })
+      setIgModalOpen(false)
+      setIgUsername(''); setIgPassword(''); setIg2faCode(''); setIgNeeds2fa(false)
+      load()
+    } catch (err) {
+      setToast({ msg: `Instagram error: ${err.message}`, kind: 'error' })
+    }
+    setIgLoading(false)
   }
 
   const ytSteps = [
@@ -156,6 +233,13 @@ export default function Connect() {
     'Get an Access Token (OAuth2)',
     'Click "Connect LinkedIn" below',
     'Paste token and click Connect',
+  ]
+
+  const metaSteps = [
+    'Click "Connect Meta Account"',
+    'Approve Facebook Page and Instagram permissions',
+    'Your Facebook Pages are imported automatically',
+    'Any linked Instagram Business accounts appear too',
   ]
 
   return (
@@ -177,13 +261,29 @@ export default function Connect() {
           Connect your social accounts to start scheduling posts globally.
         </p>
 
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
+          <Button
+            renderIcon={LogoFacebook}
+            onClick={() => { window.location.href = '/api/auth/facebook/login' }}
+            kind="primary"
+          >
+            Connect Meta Account (FB/IG)
+          </Button>
+
+          <Button
+            renderIcon={LogoInstagram}
+            onClick={() => setIgModalOpen(true)}
+            kind="tertiary"
+          >
+            Instagram Login (User/Pass)
+          </Button>
+          
           <Button
             renderIcon={LogoYoutube}
             onClick={() => { window.location.href = '/api/auth/login' }}
-            kind="primary"
+            kind="secondary"
           >
-            Connect YouTube Account
+            Connect YouTube
           </Button>
           
           <Button
@@ -196,7 +296,7 @@ export default function Connect() {
         </div>
 
         <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '2rem' }}>
-            Prefer manual token entry? <Button kind="ghost" size="sm" onClick={() => setLiModalOpen(true)} style={{ padding: '0 4px', minHeight: 'auto' }}>Click here</Button>
+            Manual token setup? <Button kind="ghost" size="sm" onClick={() => setLiModalOpen(true)} style={{ padding: '0 4px', minHeight: 'auto' }}>Click here</Button>
         </p>
 
         {/* Info Tiles */}
@@ -221,28 +321,89 @@ export default function Connect() {
               </OrderedList>
             </Tile>
           </Column>
+          <Column lg={8} md={4} sm={4}>
+            <Tile>
+               <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                 <LogoFacebook /> Meta + Instagram Setup
+               </h4>
+               <OrderedList>
+                {metaSteps.map((s, i) => <ListItem key={i}>{s}</ListItem>)}
+              </OrderedList>
+            </Tile>
+          </Column>
         </Grid>
 
-        {/* Modal for LinkedIn */}
+        {/* Instagram Connect Modal — username + password */}
         <Modal
-            open={liModalOpen}
-            modalHeading="Connect LinkedIn Account"
-            primaryButtonText="Verify & Connect"
+            open={igModalOpen}
+            modalHeading="Connect Instagram Account"
+            primaryButtonText={igLoading ? "Connecting..." : (igNeeds2fa ? "Verify Code" : "Connect")}
             secondaryButtonText="Cancel"
-            onRequestClose={() => setLiModalOpen(false)}
-            onRequestSubmit={handleLiVerify}
-            primaryButtonDisabled={!liToken || liLoading}
+            onRequestClose={() => {
+              setIgModalOpen(false)
+              setIgUsername(''); setIgPassword(''); setIg2faCode(''); setIgNeeds2fa(false)
+            }}
+            onRequestSubmit={handleInstagramConnect}
+            primaryButtonDisabled={igLoading || (!igNeeds2fa && (!igUsername || !igPassword)) || (igNeeds2fa && !ig2faCode)}
         >
-            <p style={{ marginBottom: '1rem' }}>Paste your LinkedIn Access Token from the Developer Portal.</p>
-            <TextInput
-                id="li-token"
-                labelText="Access Token"
-                placeholder="AQX..."
-                type="password"
-                value={liToken}
-                onChange={e => setLiToken(e.target.value)}
-            />
+            <div>
+              {/* Header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '1rem 1.25rem',
+                background: 'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)',
+                borderRadius: '8px', marginBottom: '1.5rem'
+              }}>
+                <LogoInstagram size={32} style={{ color: '#fff', flexShrink: 0 }} />
+                <div>
+                  <p style={{ margin: 0, color: '#fff', fontWeight: 600, fontSize: '1rem' }}>Instagram Login</p>
+                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem' }}>
+                    Enter your Instagram credentials
+                  </p>
+                </div>
+              </div>
+
+              {!igNeeds2fa ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <TextInput
+                    id="ig-username"
+                    labelText="Instagram Username"
+                    placeholder="e.g. mypostscheduler"
+                    value={igUsername}
+                    onChange={e => setIgUsername(e.target.value)}
+                    autoComplete="username"
+                  />
+                  <TextInput
+                    id="ig-password"
+                    labelText="Password"
+                    placeholder="Your Instagram password"
+                    type="password"
+                    value={igPassword}
+                    onChange={e => setIgPassword(e.target.value)}
+                    autoComplete="current-password"
+                  />
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>
+                    🔒 Your credentials are used only to authenticate with Instagram and are never stored on our servers.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <p style={{ margin: 0, fontSize: '0.875rem' }}>
+                    Instagram sent a verification code to your phone or email. Enter it below.
+                  </p>
+                  <TextInput
+                    id="ig-2fa"
+                    labelText="Verification Code"
+                    placeholder="6-digit code"
+                    value={ig2faCode}
+                    onChange={e => setIg2faCode(e.target.value)}
+                    autoComplete="one-time-code"
+                  />
+                </div>
+              )}
+            </div>
         </Modal>
+
 
         {/* Accounts list */}
         {loading ? (
@@ -257,9 +418,14 @@ export default function Connect() {
           </Tile>
         ) : (
           <>
-            <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-secondary)', marginBottom: '1rem' }}>
-              {accounts.length} account{accounts.length > 1 ? 's' : ''} connected
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-secondary)', margin: 0 }}>
+                {accounts.length} account{accounts.length > 1 ? 's' : ''} connected
+                </p>
+                <Button kind="danger--ghost" size="sm" onClick={handleDisconnectAll}>
+                    Disconnect All
+                </Button>
+            </div>
             {accounts.map(a => (
               <AccountCard key={`${a.platform}-${a.account_id}`} account={a} onDisconnect={handleDisconnect} />
             ))}
@@ -269,4 +435,3 @@ export default function Connect() {
     </Grid>
   )
 }
-

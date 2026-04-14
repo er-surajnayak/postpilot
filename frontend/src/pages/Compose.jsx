@@ -15,6 +15,8 @@ import FlashOnIcon        from '@mui/icons-material/FlashOn'
 import DeleteIcon         from '@mui/icons-material/Delete'
 import YouTubeIcon        from '@mui/icons-material/YouTube'
 import LinkedInIcon       from '@mui/icons-material/LinkedIn'
+import FacebookIcon       from '@mui/icons-material/Facebook'
+import InstagramIcon      from '@mui/icons-material/Instagram'
 import InfoIcon           from '@mui/icons-material/Info'
 import { getAccounts, uploadPost } from '../api'
 
@@ -33,6 +35,45 @@ const PRIVACY = [
   { value: 'unlisted', label: 'Unlisted', desc: 'Anyone with link', icon: '🔗' },
   { value: 'public',   label: 'Public',   desc: 'Everyone', icon: '🌍' },
 ]
+
+const PLATFORM_CONFIG = {
+  youtube: {
+    label: 'YouTube',
+    accountLabel: 'YouTube Channel',
+    icon: YouTubeIcon,
+    iconColor: '#f00',
+    accepts: 'video/*',
+    mediaText: 'video',
+    mediaHint: 'MP4, MOV, AVI supported',
+  },
+  linkedin: {
+    label: 'LinkedIn',
+    accountLabel: 'LinkedIn Profile',
+    icon: LinkedInIcon,
+    iconColor: '#0077b5',
+    accepts: 'image/*,video/*',
+    mediaText: 'media',
+    mediaHint: 'Images or Videos supported',
+  },
+  facebook: {
+    label: 'Meta',
+    accountLabel: 'Facebook Page',
+    icon: FacebookIcon,
+    iconColor: '#1877f2',
+    accepts: 'image/*,video/*',
+    mediaText: 'media',
+    mediaHint: 'Text, images, or videos supported',
+  },
+  instagram: {
+    label: 'Instagram',
+    accountLabel: 'Instagram Business Account',
+    icon: InstagramIcon,
+    iconColor: '#e1306c',
+    accepts: 'image/*,video/*',
+    mediaText: 'media',
+    mediaHint: 'Image or video required',
+  },
+}
 
 export default function Compose() {
   const [platform,     setPlatform]     = useState('youtube')
@@ -61,6 +102,7 @@ export default function Compose() {
 
   const mediaRef = useRef()
   const thumbRef = useRef()
+  const platformConfig = PLATFORM_CONFIG[platform]
 
   useEffect(() => {
     getAccounts().then(a => {
@@ -104,8 +146,10 @@ export default function Compose() {
     if (platform === 'youtube') {
         if (!title.trim()) return setError('Please enter a video title.')
         if (!mediaFile || mediaType !== 'video') return setError('Please select a video file for YouTube.')
+    } else if (platform === 'instagram') {
+        if (!mediaFile) return setError('Please select an image or video for Instagram.')
     } else {
-        if (!message.trim()) return setError('Please enter a message for LinkedIn.')
+        if (!message.trim()) return setError(`Please enter a message for ${platformConfig.label}.`)
     }
 
     setError(null); setSubmitting(true); setResult(null)
@@ -147,7 +191,7 @@ export default function Compose() {
     <Box sx={{ maxWidth: 700 }}>
       <Typography variant="h4" gutterBottom>New Post</Typography>
       <Typography color="text.secondary" sx={{ mb: 4 }}>
-        Broadcast your message across platforms effortlessly.
+        Broadcast your message across YouTube, LinkedIn, Meta, and Instagram effortlessly.
       </Typography>
 
       {/* Platform Selector */}
@@ -166,19 +210,21 @@ export default function Compose() {
                 '& .Mui-selected': { bgcolor: 'primary.main', color: '#fff', '&:hover': { bgcolor: 'primary.dark' } }
             }}
         >
-            <ToggleButton value="youtube" sx={{ gap: 1 }}>
-                <YouTubeIcon sx={{ color: platform === 'youtube' ? '#fff' : '#f00' }} /> YouTube
-            </ToggleButton>
-            <ToggleButton value="linkedin" sx={{ gap: 1 }}>
-                <LinkedInIcon sx={{ color: platform === 'linkedin' ? '#fff' : '#0077b5' }} /> LinkedIn
-            </ToggleButton>
+            {Object.entries(PLATFORM_CONFIG).map(([value, cfg]) => {
+              const Icon = cfg.icon
+              return (
+                <ToggleButton key={value} value={value} sx={{ gap: 1 }}>
+                  <Icon sx={{ color: platform === value ? '#fff' : cfg.iconColor }} /> {cfg.label}
+                </ToggleButton>
+              )
+            })}
         </ToggleButtonGroup>
       </Box>
 
       {/* No accounts warning */}
       {filteredAccounts.length === 0 && (
         <Alert severity="warning" sx={{ mb: 3 }} icon={<InfoIcon />}>
-          No {platform} accounts connected.{' '}
+          No {platformConfig.label} accounts connected.{' '}
           <a href="/connect" style={{ color: 'inherit', fontWeight: 700 }}>Connect an account →</a>
         </Alert>
       )}
@@ -194,14 +240,14 @@ export default function Compose() {
       <Stack spacing={3}>
         {/* Account selection */}
         <FormControl fullWidth>
-          <InputLabel>{platform === 'youtube' ? 'YouTube Channel' : 'LinkedIn Profile'}</InputLabel>
+          <InputLabel>{platformConfig.accountLabel}</InputLabel>
           <Select
             value={accountId}
-            label={platform === 'youtube' ? 'YouTube Channel' : 'LinkedIn Profile'}
+            label={platformConfig.accountLabel}
             onChange={e => setAccountId(e.target.value)}
           >
             {filteredAccounts.length === 0
-              ? <MenuItem value="">No {platform} accounts</MenuItem>
+              ? <MenuItem value="">No {platformConfig.label} accounts</MenuItem>
               : filteredAccounts.map(a => (
                   <MenuItem key={a.account_id} value={a.account_id}>{a.account_name}</MenuItem>
                 ))
@@ -212,10 +258,10 @@ export default function Compose() {
         {/* Media upload */}
         <Box>
           <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
-            Media File (Optional for LinkedIn)
+            Media File {platform === 'youtube' ? '' : platform === 'instagram' ? '(Required)' : '(Optional)'}
             {mediaFile && <Chip label={`${(mediaFile.size/1024/1024).toFixed(1)} MB`} size="small" sx={{ ml: 1 }} />}
           </Typography>
-          <input ref={mediaRef} type="file" accept={platform === 'youtube' ? "video/*" : "image/*,video/*"} onChange={onMediaChange} style={{ display: 'none' }} />
+          <input ref={mediaRef} type="file" accept={platformConfig.accepts} onChange={onMediaChange} style={{ display: 'none' }} />
           {mediaPreview ? (
             <Box sx={{ position: 'relative' }}>
                {mediaType === 'video' ? (
@@ -240,9 +286,9 @@ export default function Compose() {
               <CardActionArea onClick={() => mediaRef.current.click()}>
                 <CardContent sx={{ textAlign: 'center', py: 5 }}>
                   <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                  <Typography fontWeight={600}>Click to select {platform === 'youtube' ? 'video' : 'media'}</Typography>
+                  <Typography fontWeight={600}>Click to select {platformConfig.mediaText}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                      {platform === 'youtube' ? 'MP4, MOV, AVI supported' : 'Images or Videos supported'}
+                      {platformConfig.mediaHint}
                   </Typography>
                 </CardContent>
               </CardActionArea>
@@ -293,14 +339,26 @@ export default function Compose() {
                   />
             </>
         ) : (
-            <TextField
-                label="Message"
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                multiline rows={4}
-                placeholder="What do you want to share today? #social #media"
-                fullWidth
-            />
+            <>
+              <TextField
+                  label={platform === 'facebook' ? 'Post Message' : 'Caption'}
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  multiline rows={4}
+                  placeholder={
+                    platform === 'instagram'
+                      ? 'Write a caption for your Instagram post'
+                      : 'What do you want to share today? #social #media'
+                  }
+                  helperText={platform === 'instagram' ? 'Optional, but recommended.' : undefined}
+                  fullWidth
+              />
+              {platform === 'instagram' && (
+                <Alert severity="info">
+                  Instagram publishing works only for connected Instagram Business accounts, and the backend must be reachable on a public URL so Meta can fetch media.
+                </Alert>
+              )}
+            </>
         )}
 
         {/* YouTube Thumbnail */}
@@ -423,4 +481,3 @@ export default function Compose() {
     </Box>
   )
 }
-

@@ -1,19 +1,23 @@
 import os
 import shutil
+import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from auth import (
-    get_auth_url, exchange_code, list_connected_accounts, 
+    get_auth_url, exchange_code, list_connected_accounts,
     disconnect_account, verify_and_save_linkedin_token,
-    get_linkedin_auth_url, exchange_linkedin_code
+    get_linkedin_auth_url, exchange_linkedin_code,
+    get_facebook_auth_url, exchange_facebook_code,
+    get_instagram_auth_url, exchange_instagram_code,
+    verify_and_save_instagram_token, verify_and_save_facebook_token,
 )
-from models import SchedulePost
 from scheduler import add_job, get_all_jobs, get_job, delete_job, start_scheduler, stop_scheduler
 from youtube import list_videos
 
@@ -39,6 +43,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Social Scheduler API", lifespan=lifespan)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -98,6 +103,144 @@ def linkedin_callback(code: str = None, error: str = None, state: str = None):
         return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
 
 
+@app.get("/auth/facebook/login")
+def facebook_login():
+    """Redirect user to Meta OAuth screen."""
+    try:
+        url = get_facebook_auth_url()
+        return RedirectResponse(url)
+    except Exception as e:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
+
+
+@app.get("/auth/facebook/callback")
+def facebook_callback(code: str = None, error: str = None, state: str = None):
+    """Meta redirects here after user approves."""
+    if error or not code:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error=access_denied")
+    try:
+        accounts = exchange_facebook_code(code)
+        display_name = None
+        if accounts.get("facebook"):
+            display_name = accounts["facebook"][0]["name"]
+        elif accounts.get("instagram"):
+            display_name = accounts["instagram"][0]["username"]
+        display_name = (display_name or "Meta account").replace(" ", "%20")
+        return RedirectResponse(
+            f"{FRONTEND_URL}/connect?success=true&platform=facebook&channel={display_name}"
+        )
+    except Exception as e:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
+
+
+
+@app.get("/auth/instagram/login")
+def instagram_login():
+    """Redirect user to Meta OAuth screen using the Instagram app."""
+    try:
+        url = get_instagram_auth_url()
+        return RedirectResponse(url)
+    except Exception as e:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
+
+
+@app.get("/auth/instagram/callback")
+def instagram_callback(code: str = None, error: str = None, state: str = None):
+    """Meta redirects here after user approves Instagram permissions."""
+    if error or not code:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error=access_denied")
+    try:
+        accounts = exchange_instagram_code(code)
+        display_name = None
+        if accounts.get("instagram"):
+            display_name = accounts["instagram"][0].get("username")
+        elif accounts.get("facebook"):
+            display_name = accounts["facebook"][0]["name"]
+        display_name = (display_name or "Instagram account").replace(" ", "%20")
+        return RedirectResponse(
+            f"{FRONTEND_URL}/connect?success=true&platform=instagram&channel={display_name}"
+        )
+    except Exception as e:
+        return RedirectResponse(f"{FRONTEND_URL}/connect?error={str(e)}")
+
+
+@app.post("/auth/instagram/connect")
+def instagram_connect(
+    username: str = Form(...),
+    password: str = Form(...),
+    verification_code: str = Form(""),
+):
+    """Connect Instagram account via username + password (instagrapi)."""
+    try:
+        from instagram_private import login_with_credentials
+        account = login_with_credentials(username.strip(), password, verification_code.strip())
+        return {
+            "success": True,
+            "account_id": account["instagram_user_id"],
+            "username": account["username"],
+            "name": account.get("name", account["username"]),
+            "thumbnail": account.get("picture", ""),
+            "requires_2fa": False,
+        }
+    except ValueError as e:
+        if str(e) == "2FA_REQUIRED":
+            return {"success": False, "requires_2fa": True, "detail": "2FA code required"}
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Login failed: {str(e)}")
+
+
+@app.post("/auth/instagram/verify")
+def instagram_verify(token: str = Form(...)):
+    """Verify and save an Instagram access token entered manually."""
+    try:
+        account = verify_and_save_instagram_token(token)
+        return {
+            "success": True,
+            "account_id": account["instagram_user_id"],
+            "username": account["username"],
+            "name": account.get("name", account["username"]),
+            "thumbnail": account.get("picture", ""),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/auth/linkedin/connect")
+def linkedin_connect(
+    email: str = Form(...),
+    password: str = Form(...),
+):
+    """Connect LinkedIn account via email + password (linkedin-api)."""
+    try:
+        from linkedin_private import login_with_credentials
+        account = login_with_credentials(email.strip(), password)
+        return {
+            "success": True,
+            "account_id": account["person_urn"],
+            "name": account.get("name", email),
+            "thumbnail": account.get("picture", ""),
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Login failed: {str(e)}")
+
+
+@app.post("/auth/facebook/verify")
+def facebook_verify(token: str = Form(...)):
+    """Verify and save a Facebook Page access token entered manually."""
+    try:
+        account = verify_and_save_facebook_token(token)
+        return {
+            "success": True,
+            "account_id": account["page_id"],
+            "name": account["name"],
+            "thumbnail": account["picture"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @app.post("/auth/linkedin/verify")
 def linkedin_verify(token: str = Form(...)):
@@ -116,7 +259,7 @@ def linkedin_verify(token: str = Form(...)):
 
 @app.get("/auth/accounts")
 def get_accounts():
-    """List all connected YouTube & LinkedIn accounts."""
+    """List all connected social accounts."""
     return list_connected_accounts()
 
 
@@ -149,7 +292,8 @@ async def schedule_post(
     media_file = video or image
     media_path = None
     if media_file and media_file.filename:
-        media_path = UPLOADS_DIR / media_file.filename
+        safe_name = Path(media_file.filename).name.replace(" ", "_")
+        media_path = UPLOADS_DIR / f"{uuid.uuid4().hex}_{safe_name}"
         with open(media_path, "wb") as f:
             shutil.copyfileobj(media_file.file, f)
 
@@ -210,4 +354,3 @@ def get_channel_videos(channel_id: str, max_results: int = 20):
 @app.get("/health")
 def health():
     return {"status": "ok"}
-

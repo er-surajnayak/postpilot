@@ -22,12 +22,15 @@ CATEGORIES = {
 
 def to_utc_string(dt_str: str, tz_name: str) -> str:
     tz = pytz.timezone(tz_name)
-    # Accept ISO format string
-    naive = datetime.fromisoformat(dt_str.replace("Z", ""))
-    if naive.tzinfo is None:
-        aware = tz.localize(naive)
+    # Accept ISO format string correctly
+    if dt_str.endswith("Z"):
+        aware = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
     else:
-        aware = naive
+        naive = datetime.fromisoformat(dt_str)
+        if naive.tzinfo is None:
+            aware = tz.localize(naive)
+        else:
+            aware = naive
     return aware.astimezone(pytz.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
