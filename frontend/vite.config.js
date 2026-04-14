@@ -9,8 +9,7 @@ export default defineConfig({
       '/api': {
         // To use the production backend during local development, swap to the Render URL
         // target: 'https://postpilot-4tud.onrender.com',
-        // target: process.env.VITE_API_URL || 'http://localhost:8000',
-        target: 'http://localhost:8000',
+        target: process.env.VITE_API_URL || 'http://localhost:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

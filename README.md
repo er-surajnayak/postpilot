@@ -36,21 +36,27 @@ social-scheduler/
 
 ## Setup (one time)
 
-### Step 1 — Google Cloud credentials
+### Step 1 — Get API Credentials
 
-1. Go to https://console.cloud.google.com
-2. Create a project (or use existing one)
-3. Enable **YouTube Data API v3**
-   - APIs & Services → Library → search "YouTube Data API v3" → Enable
-4. Create OAuth credentials
-   - APIs & Services → Credentials → Create Credentials → OAuth client ID
-   - Application type: **Web Application**
-   - Name: PostPilot (or anything)
-   - Authorized redirect URIs: `http://localhost:8000/auth/callback`
-   - Click Create → Copy the **Client ID** and **Client Secret**
-5. OAuth consent screen
-   - User Type: External
-   - Add your Gmail as a Test User
+**1. Google Cloud (YouTube)**
+- Go to https://console.cloud.google.com and create a project
+- Enable **YouTube Data API v3**
+- Go to APIs & Services → Credentials → Create OAuth client ID (Web Application)
+- Add authorized redirect URI: `http://localhost:8000/auth/callback` (or your production URL `https://your-backend-domain/auth/callback`)
+- Copy **Client ID** and **Client Secret**
+
+**2. LinkedIn Developer Portal**
+- Go to https://developer.linkedin.com/
+- Create an app and enable **Sign In with LinkedIn** and **Share on LinkedIn**
+- Add authorized redirect URI: `http://localhost:8000/auth/linkedin/callback` (or your production URL `https://your-backend-domain/auth/linkedin/callback`)
+- Copy **Client ID** and **Client Secret**
+
+**3. Meta (Facebook + Instagram)**
+- Create a Business app at https://developers.facebook.com/apps
+- Add products: `Facebook Login`, `Pages API`, `Instagram Graph API`
+- Add authorized redirect URI: `http://localhost:8000/auth/facebook/callback` (and your production URL)
+- Copy **App ID** and **App Secret** into `META_APP_ID` and `META_APP_SECRET`.
+- When connecting via the frontend, all authorized Facebook Pages and linked Instagram Business accounts will be imported.
 
 ---
 
@@ -61,7 +67,6 @@ cd backend
 
 # Copy env file and fill in your credentials
 cp .env.example .env
-# Open .env and paste your GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
 
 # Create virtual environment
 python -m venv venv
@@ -71,12 +76,15 @@ source venv/bin/activate      # Mac/Linux
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the backend
+# Run the backend locally
 uvicorn main:app --reload --port 8000
 ```
 
 Backend runs at: http://localhost:8000
 API docs at:     http://localhost:8000/docs
+
+*Note on Production Deployments:* Set `FRONTEND_URL` and `BACKEND_URL` in `.env` or in your hosting provider (e.g. Render) to point to your live deployment endpoints. 
+**Crucial Instagram Note:** Instagram publishing requires `BACKEND_URL` to be publicly reachable because Meta fetches media from your backend at publish time. However, Facebook Page publishing uses binary uploads directly and functions properly on `localhost`.
 
 ---
 
@@ -88,7 +96,7 @@ cd frontend
 # Install dependencies
 npm install
 
-# Run the frontend
+# Run the frontend locally
 npm run dev
 ```
 
@@ -98,28 +106,10 @@ Frontend runs at: http://localhost:5173
 
 ## Usage
 
-1. Open http://localhost:5173
-2. Go to **Accounts** tab → click **Connect YouTube Account**
-3. Choose your Google account → click Allow
-4. You're connected! Go to **New Post** to schedule a video
-5. Check **Queue** tab to track upload status
-
----
-
-## API Endpoints
-
-| Method | Endpoint                        | Description                    |
-|--------|---------------------------------|--------------------------------|
-| GET    | /auth/login                     | Redirect to Google OAuth       |
-| GET    | /auth/callback                  | OAuth callback (Google calls this) |
-| GET    | /auth/accounts                  | List connected accounts        |
-| DELETE | /auth/accounts/{channel_id}     | Disconnect an account          |
-| POST   | /posts/upload                   | Upload/schedule a post         |
-| GET    | /posts                          | Get all posts                  |
-| GET    | /posts/{job_id}                 | Get single post status         |
-| DELETE | /posts/{job_id}                 | Cancel a post                  |
-| GET    | /youtube/{channel_id}/videos    | List channel videos            |
-| GET    | /health                         | Health check                   |
+1. Open frontend app (e.g. http://localhost:5173)
+2. Go to **Accounts** tab and use the connect buttons to link your platforms via OAuth.
+3. You're connected! Go to **New Post** to schedule or publish immediately!
+4. Check **Queue** tab to track upload status.
 
 ---
 
@@ -133,26 +123,12 @@ LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
 META_APP_ID=your_meta_app_id
 META_APP_SECRET=your_meta_app_secret
 META_GRAPH_VERSION=v23.0
+INSTAGRAM_APP_ID=your_instagram_app_id  # Optional, for Instagram Login flow
+INSTAGRAM_APP_SECRET=your_instagram_secret
 FRONTEND_URL=http://localhost:5173
 BACKEND_URL=http://localhost:8000
 SECRET_KEY=any_random_string
 ```
-
-## Meta + Instagram Setup
-
-1. Create a Meta app at `https://developers.facebook.com/apps`
-2. App type: `Business`
-3. Add products:
-   - `Facebook Login`
-   - `Pages API`
-   - `Instagram Graph API`
-4. Add OAuth redirect URI:
-   - Local: `http://localhost:8000/auth/facebook/callback`
-   - Production: `https://your-backend-domain/auth/facebook/callback`
-5. In Meta Business, make sure your Instagram account is a Business account and linked to a Facebook Page
-6. Paste `META_APP_ID` and `META_APP_SECRET` into `backend/.env`
-
-Note: Instagram publishing requires `BACKEND_URL` to be publicly reachable because Meta fetches media from your backend at publish time.
 
 ---
 

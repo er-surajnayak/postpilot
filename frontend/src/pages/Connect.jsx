@@ -160,34 +160,6 @@ export default function Connect() {
     load()
   }
 
-  const handleManualVerify = async () => {
-    if (!manualToken) return
-    setManualLoading(true)
-    try {
-      let res
-      if (manualPlatform === 'linkedin') {
-        res = await verifyLinkedInToken(manualToken)
-        setToast({ msg: `LinkedIn Connected: ${res.name}`, kind: 'success' })
-      } else {
-        // Instagram or Facebook
-        const uri = manualPlatform === 'instagram' ? '/api/auth/instagram/verify' : '/api/auth/facebook/verify'
-        res = await fetch(uri, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `token=${encodeURIComponent(manualToken)}`
-        }).then(r => r.json())
-        
-        if (res.error || res.detail) throw new Error(res.error || res.detail)
-        setToast({ msg: `${manualPlatform === 'facebook' ? 'Facebook' : 'Instagram'} Connected: ${res.name || res.username}`, kind: 'success' })
-      }
-      setLiModalOpen(false)
-      setManualToken('')
-      load()
-    } catch (err) {
-      setToast({ msg: `Failed to verify: ${err.message}`, kind: 'error' })
-    }
-    setManualLoading(false)
-  }
 
   const handleInstagramConnect = async () => {
     if (!igUsername || !igPassword) return
@@ -229,10 +201,10 @@ export default function Connect() {
   ]
   
   const liSteps = [
-    'Go to LinkedIn Developer Portal',
-    'Get an Access Token (OAuth2)',
-    'Click "Connect LinkedIn" below',
-    'Paste token and click Connect',
+    'Click "Connect LinkedIn Account"',
+    'Sign in to your LinkedIn profile',
+    'Click Allow on permissions screen',
+    'Account appears in list below',
   ]
 
   const metaSteps = [
@@ -295,9 +267,6 @@ export default function Connect() {
           </Button>
         </div>
 
-        <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '2rem' }}>
-            Manual token setup? <Button kind="ghost" size="sm" onClick={() => setLiModalOpen(true)} style={{ padding: '0 4px', minHeight: 'auto' }}>Click here</Button>
-        </p>
 
         {/* Info Tiles */}
         <Grid narrow style={{ marginBottom: '2rem', marginLeft: 0, padding: 0 }}>
